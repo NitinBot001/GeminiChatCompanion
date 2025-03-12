@@ -27,6 +27,7 @@ jobs:
     - name: Create Python application
       run: |
         git clone https://github.com/NitinBot001/plant-disease-detection-CNN-API.git
+        cp -r plant-disease-detection-CNN-API/* ~/
 
     - name: Install Python dependencies
       run: |
@@ -34,7 +35,7 @@ jobs:
         sudo apt update && sudo apt upgrade
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest
-        if [ -f plant-disease-detection-CNN-API/requirements.txt ]; then pip install -r plant-disease-detection-CNN-API/requirements.txt; fi
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Install Node.js dependencies
       uses: actions/setup-node@v3
@@ -48,7 +49,7 @@ jobs:
         # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
         # Start Flask service using Gunicorn with 4 workers
-        python ./plant-disease-detection-CNN-API/app.py > app.log 2>&1 &
+        python app.py > app.log 2>&1 &
 
         # Start tunnel
         npx nport -s ${{ steps.uid.outputs.instance_id }} -p 8000 > tunnel.log 2>&1 &

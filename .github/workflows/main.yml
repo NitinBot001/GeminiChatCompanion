@@ -1,0 +1,85 @@
+name: AI Service Orchestrator
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-service]
+
+jobs:
+  service-instance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360  # 6 hours max
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate unique ID
+      id: uid
+      run: |
+        UUID=$(uuidgen | cut -d'-' -f1)
+        echo "instance_id=gemini-$UUID" >> $GITHUB_OUTPUT
+
+    - name: Setup environment
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Create Python application
+      run: |
+        git clone https://github.com/NitinBot001/plant-disease-detection-CNN-API.git
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        sudo apt update && sudo apt upgrade
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest
+        if [ -f plant-disease-detection-CNN-API/requirements.txt ]; then pip install -r plant-disease-detection-CNN-API/requirements.txt; fi
+
+    - name: Install Node.js dependencies
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    - run: npm install -g nport
+
+    - name: Launch service cluster
+      env:
+        GH_PAT: ${{ secrets.GH_PAT }}
+        # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: |
+        # Start Flask service using Gunicorn with 4 workers
+        gunicorn -w 4 -b 0.0.0.0:8000 "plant-disease-detection-CNN-API.app:app" > app.log 2>&1 &
+
+        # Start tunnel
+        npx nport -s ${{ steps.uid.outputs.instance_id }} -p 8000 > tunnel.log 2>&1 &
+
+        # Wait for tunnel to establish and extract URL
+        sleep 10
+        TUNNEL_URL=$(grep -oP 'your domain is: \Khttps://gemini\S+' tunnel.log)
+        
+        echo "Extracted Tunnel URL: $TUNNEL_URL"
+
+        # Create instance.json file
+        echo "{ \"tunnel_url\": \"$TUNNEL_URL\" }" > instance.json
+
+        # Commit and push to the repository
+        git config --global user.email "github-actions@github.com"
+        git config --global user.name "github-actions"
+
+        git clone https://x-access-token:$GH_PAT@github.com/NitinBot001/GeminiChatCompanion.git repo
+        cd repo
+
+        mv ../instance.json instance.json
+        git add instance.json
+        git commit -m "Update tunnel URL to $TUNNEL_URL"
+        git push origin main
+
+        # Trigger next instance at 5.5 hours
+        (sleep 19800 && 
+        curl -X POST "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+          -H "Authorization: Bearer $GH_PAT" \
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          -d '{"event_type": "trigger-service"}') &
+
+        # Keep alive for full duration
+        sleep 21600

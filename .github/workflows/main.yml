@@ -59,7 +59,7 @@ jobs:
       run: |
         # Start Flask service using Gunicorn with 4 workers
         cd plant-disease-detection-CNN-API
-        python app.py > app.log 2>&1 &
+        python app.py &
 
         # Start tunnel
         npx nport -s ${{ steps.uid.outputs.instance_id }} -p 8000 > tunnel.log 2>&1 &

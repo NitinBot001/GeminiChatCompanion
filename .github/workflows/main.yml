@@ -17,7 +17,7 @@ jobs:
       id: uid
       run: |
         UUID=$(uuidgen | cut -d'-' -f1)
-        echo "instance_id=gemini-$UUID" >> $GITHUB_OUTPUT
+        echo "instance_id=cnnp-$UUID" >> $GITHUB_OUTPUT
 
     - name: Setup environment
       uses: actions/setup-python@v4

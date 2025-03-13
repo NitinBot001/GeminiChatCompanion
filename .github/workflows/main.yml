@@ -10,27 +10,52 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360  # 6 hours max
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Generate unique ID
       id: uid
       run: |
         UUID=$(uuidgen | cut -d'-' -f1)
         echo "instance_id=gemini-$UUID" >> $GITHUB_OUTPUT
 
+    - name: Setup environment
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
     - name: Install Docker
       run: |
+        # Remove any existing Docker packages to avoid conflicts
+        sudo apt-get remove -y docker docker-engine docker.io containerd runc || true
+        # Update package index
         sudo apt-get update
-        sudo apt-get install -y docker.io
-        sudo systemctl start docker
-        sudo systemctl enable docker
-        docker --version
+        # Install required dependencies
+        sudo apt-get install -y \
+          ca-certificates \
+          curl \
+          gnupg \
+          lsb-release
+        # Add Docker's official GPG key
+        sudo mkdir -p /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        # Set up the Docker repository
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+          $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        # Update package index again
+        sudo apt-get update
+        # Install Docker
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+        # Add user to docker group
+        sudo usermod -aG docker $USER
 
-    - name: Clone Plant Disease Detection
-      run: git clone https://github.com/imskr/Plant_Disease_Detection.git
-
-    - name: Build Docker image
+    - name: Clone Plant Disease Detection repo and build/run Docker
       run: |
+        git clone https://github.com/imskr/Plant_Disease_Detection.git
         cd Plant_Disease_Detection
-        docker build -t fastai-v3 .
+        sudo docker build -t fastai-v3 .
+        sudo docker run -d -p 8080:8080 fastai-v3 &
 
     - name: Install Node.js dependencies
       uses: actions/setup-node@v3
@@ -43,10 +68,6 @@ jobs:
         GH_PAT: ${{ secrets.GH_PAT }}
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
-        # Run Docker container
-        cd Plant_Disease_Detection
-        docker run --rm -d -p 8080:8080 fastai-v3
-
         # Start tunnel
         npx nport -s ${{ steps.uid.outputs.instance_id }} -p 8080 > tunnel.log 2>&1 &
 

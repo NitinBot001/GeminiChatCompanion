@@ -10,34 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360  # 6 hours max
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
     - name: Generate unique ID
       id: uid
       run: |
         UUID=$(uuidgen | cut -d'-' -f1)
         echo "instance_id=gemini-$UUID" >> $GITHUB_OUTPUT
 
-    - name: Setup environment
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+    - name: Clone Plant Disease Detection
+      run: git clone https://github.com/imskr/Plant_Disease_Detection.git
 
-    - name: Install Docker
+    - name: Build Docker image
       run: |
-        sudo apt-get update
-        sudo apt-get install -y docker.io
-        sudo systemctl start docker
-        sudo systemctl enable docker
-        sudo usermod -aG docker $USER
-
-    - name: Clone Plant Disease Detection repo and build/run Docker
-      run: |
-        git clone https://github.com/imskr/Plant_Disease_Detection.git
         cd Plant_Disease_Detection
         docker build -t fastai-v3 .
-        docker run -d -p 8080:8080 fastai-v3 &
 
     - name: Install Node.js dependencies
       uses: actions/setup-node@v3
@@ -48,8 +33,12 @@ jobs:
     - name: Launch service cluster
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
-        # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
+        # Run Docker container
+        cd Plant_Disease_Detection
+        docker run --rm -d -p 8080:8080 fastai-v3
+
         # Start tunnel
         npx nport -s ${{ steps.uid.outputs.instance_id }} -p 8080 > tunnel.log 2>&1 &
 
@@ -66,7 +55,7 @@ jobs:
         git config --global user.email "github-actions@github.com"
         git config --global user.name "github-actions"
 
-        git clone https://x-access-token:$GH_PAT@github.com/NitinBot001/Gemini.git repo
+        git clone https://x-access-token:$GH_PAT@github.com/NitinBot001/GeminiChatCompanion.git repo
         cd repo
 
         mv ../instance.json instance.json

@@ -16,6 +16,14 @@ jobs:
         UUID=$(uuidgen | cut -d'-' -f1)
         echo "instance_id=gemini-$UUID" >> $GITHUB_OUTPUT
 
+    - name: Install Docker
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker.io
+        sudo systemctl start docker
+        sudo systemctl enable docker
+        docker --version
+
     - name: Clone Plant Disease Detection
       run: git clone https://github.com/imskr/Plant_Disease_Detection.git
 
@@ -55,7 +63,7 @@ jobs:
         git config --global user.email "github-actions@github.com"
         git config --global user.name "github-actions"
 
-        git clone https://x-access-token:$GH_PAT@github.com/NitinBot001/GeminiChatCompanion.git repo
+        git clone https://x-access-token:$GH_PAT@github.com/NitinBot001/Gemini.git repo
         cd repo
 
         mv ../instance.json instance.json

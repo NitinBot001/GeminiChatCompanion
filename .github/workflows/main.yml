@@ -52,7 +52,7 @@ jobs:
 
     - name: Clone Plant Disease Detection repo and build/run Docker
       run: |
-        git clone https://github.com/imskr/Plant_Disease_Detection.git
+        git clone https://github.com/NitinBot001/Plant_Disease_Detection.git
         cd Plant_Disease_Detection
         sudo docker build -t fastai-v3 .
         sudo docker run -d -p 8080:8080 fastai-v3 &

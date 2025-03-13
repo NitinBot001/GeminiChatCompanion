@@ -26,6 +26,7 @@ jobs:
 
     - name: Create Python application
       run: |
+        cd ~
         git clone https://github.com/NitinBot001/plant-disease-detection-CNN-API.git
         # cp -r plant-disease-detection-CNN-API/* ~/
 
@@ -40,6 +41,7 @@ jobs:
         
     - name: Lint with flake8
       run: |
+        cd ~
         cd plant-disease-detection-CNN-API
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -58,6 +60,7 @@ jobs:
         # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
         # Start Flask service using Gunicorn with 4 workers
+        cd ~
         cd plant-disease-detection-CNN-API
         python app.py &
 

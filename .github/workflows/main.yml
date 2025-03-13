@@ -17,36 +17,27 @@ jobs:
       id: uid
       run: |
         UUID=$(uuidgen | cut -d'-' -f1)
-        echo "instance_id=CNN-$UUID" >> $GITHUB_OUTPUT
+        echo "instance_id=gemini-$UUID" >> $GITHUB_OUTPUT
 
     - name: Setup environment
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
-    - name: Create Python application
+    - name: Install Docker
       run: |
-        # cd ~
-        git clone https://github.com/NitinBot001/plant-disease-detection-CNN-API.git
-        # cp -r plant-disease-detection-CNN-API/* ~/
+        sudo apt-get update
+        sudo apt-get install -y docker.io
+        sudo systemctl start docker
+        sudo systemctl enable docker
+        sudo usermod -aG docker $USER
 
-    - name: Install Python dependencies
+    - name: Clone Plant Disease Detection repo and build/run Docker
       run: |
-        cd plant-disease-detection-CNN-API
-        python -m pip install --upgrade pip
-        sudo apt update && sudo apt upgrade
-        python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        
-    - name: Lint with flake8
-      run: |
-        # cd ~
-        cd plant-disease-detection-CNN-API
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        git clone https://github.com/imskr/Plant_Disease_Detection.git
+        cd Plant_Disease_Detection
+        docker build -t fastai-v3 .
+        docker run -d -p 8080:8080 fastai-v3 &
 
     - name: Install Node.js dependencies
       uses: actions/setup-node@v3
@@ -59,13 +50,8 @@ jobs:
         GH_PAT: ${{ secrets.GH_PAT }}
         # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
-        # Start Flask service using Gunicorn with 4 workers
-        # cd ~
-        cd plant-disease-detection-CNN-API
-        python app.py &
-
         # Start tunnel
-        npx nport -s ${{ steps.uid.outputs.instance_id }} -p 8000 > tunnel.log 2>&1 &
+        npx nport -s ${{ steps.uid.outputs.instance_id }} -p 8080 > tunnel.log 2>&1 &
 
         # Wait for tunnel to establish and extract URL
         sleep 10
@@ -80,7 +66,7 @@ jobs:
         git config --global user.email "github-actions@github.com"
         git config --global user.name "github-actions"
 
-        git clone https://x-access-token:$GH_PAT@github.com/NitinBot001/GeminiChatCompanion.git repo
+        git clone https://x-access-token:$GH_PAT@github.com/NitinBot001/Gemini.git repo
         cd repo
 
         mv ../instance.json instance.json

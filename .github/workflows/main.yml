@@ -27,10 +27,11 @@ jobs:
     - name: Create Python application
       run: |
         git clone https://github.com/NitinBot001/plant-disease-detection-CNN-API.git
-        cp -r plant-disease-detection-CNN-API/* ~/
+        # cp -r plant-disease-detection-CNN-API/* ~/
 
     - name: Install Python dependencies
       run: |
+        cd plant-disease-detection-CNN-API
         python -m pip install --upgrade pip
         sudo apt update && sudo apt upgrade
         python -m pip install --upgrade pip
@@ -39,6 +40,7 @@ jobs:
         
     - name: Lint with flake8
       run: |
+        cd plant-disease-detection-CNN-API
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
@@ -56,6 +58,7 @@ jobs:
         # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
         # Start Flask service using Gunicorn with 4 workers
+        cd plant-disease-detection-CNN-API
         python app.py > app.log 2>&1 &
 
         # Start tunnel
